@@ -1,0 +1,91 @@
+{
+  "type": "FeatureCollection",
+  "name": "circuits_ecotouristiques_fianarantsoa",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "nom": "Circuit Talatakely (Ranomafana)",
+        "type": "Boucle forêt primaire",
+        "distance_km": 6,
+        "duree": "3 à 4 heures",
+        "difficulte": "Modérée",
+        "description": "Boucle classique du parc de Ranomafana, forte probabilité d'observer des lémuriens."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [47.4321, -21.2555],
+          [47.4360, -21.2530],
+          [47.4400, -21.2560],
+          [47.4370, -21.2600],
+          [47.4321, -21.2555]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "nom": "Sentier des Makis (Anja)",
+        "type": "Boucle rochers/forêt",
+        "distance_km": 3,
+        "duree": "1h30",
+        "difficulte": "Facile",
+        "description": "Sentier balisé à travers les massifs granitiques d'Anja, observation de makis catta."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [46.9432, -21.8672],
+          [46.9450, -21.8650],
+          [46.9470, -21.8680],
+          [46.9432, -21.8672]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3,
+        "nom": "Trek Camp Catta - Tsaranoro",
+        "type": "Trek montagne",
+        "distance_km": 12,
+        "duree": "1 à 2 jours",
+        "difficulte": "Difficile",
+        "description": "Ascension vers les parois du massif du Tsaranoro depuis le Camp Catta."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [46.8833, -22.1667],
+          [46.8900, -22.1600],
+          [46.8950, -22.1500],
+          [46.9000, -22.1450]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 4,
+        "nom": "Ascension Pic Boby (Andringitra)",
+        "type": "Trek sommet",
+        "distance_km": 22,
+        "duree": "2 à 3 jours",
+        "difficulte": "Difficile",
+        "description": "Trek vers le sommet Imarivolanitra (Pic Boby), point culminant du parc, 2658 m."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [46.9167, -22.2000],
+          [46.9100, -22.2100],
+          [46.9050, -22.2200],
+          [46.9000, -22.2300]
+        ]
+      }
+    }
+  ]
+}

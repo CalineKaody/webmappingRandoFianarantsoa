@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Webmapping Randonnée & Écotourisme — Région de Fianarantsoa</title>
+
+<!-- PWA : permet d'installer l'appli sur téléphone (Ajouter à l'écran d'accueil) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f5233">
+<link rel="icon" href="icon.png">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  :root{
+    --vert-foret: #2f5233;
+    --vert-clair: #6b9e5c;
+    --terre: #a9744f;
+    --sable: #f4ecd8;
+    --texte: #2b2b1f;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    color: var(--texte);
+    background: var(--sable);
+  }
+
+  header{
+    background: linear-gradient(90deg, var(--vert-foret), var(--vert-clair));
+    color: #fff;
+    padding: 14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    z-index: 1000;
+    position: relative;
+  }
+  header h1{ font-size: 1.25rem; margin:0; }
+  header h1 span{ display:block; font-size:0.75rem; font-weight:normal; opacity:0.9; }
+  header .badge{
+    background: rgba(255,255,255,0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+  }
+
+  #app{
+    display:flex;
+    height: calc(100vh - 62px);
+  }
+
+  #sidebar{
+    width: 320px;
+    background: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y:auto;
+    padding: 16px;
+  }
+  #sidebar h2{
+    font-size: 0.95rem;
+    color: var(--vert-foret);
+    margin-top: 0;
+    border-bottom: 2px solid var(--vert-clair);
+    padding-bottom: 6px;
+  }
+
+  .filtre-group{ margin-bottom: 18px; }
+  .filtre-group label{
+    display:block;
+    font-size:0.85rem;
+    margin-bottom: 6px;
+    cursor:pointer;
+  }
+  .filtre-group input{ margin-right:6px; }
+
+  select, input[type=text]{
+    width:100%;
+    padding:6px 8px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:0.85rem;
+  }
+
+  .site-card{
+    background: var(--sable);
+    border-left: 4px solid var(--vert-clair);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    cursor:pointer;
+    transition: background 0.15s;
+  }
+  .site-card:hover{ background: #eee3c9; }
+  .site-card b{ display:block; color: var(--vert-foret); font-size:0.85rem; }
+  .tag{
+    display:inline-block;
+    font-size:0.65rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-top:4px;
+    color:#fff;
+  }
+  .tag-facile{ background:#4c9a4c; }
+  .tag-moderee{ background:#c98b2c; }
+  .tag-difficile{ background:#b5432f; }
+
+  #map{ flex:1; }
+
+  .leaflet-popup-content b{ color: var(--vert-foret); }
+  .leaflet-popup-content{ font-size: 0.85rem; }
+
+  .legend{
+    background: white;
+    padding: 10px 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .legend i{
+    width: 12px; height: 12px;
+    display:inline-block;
+    margin-right:6px;
+    border-radius: 50%;
+    vertical-align: middle;
+  }
+
+  /* --- Contribution : signaler un nouveau site --- */
+  #btn-contribuer{
+    width:100%;
+    background: var(--terre);
+    color:#fff;
+    border:none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor:pointer;
+    margin-bottom: 6px;
+    transition: background 0.15s;
+  }
+  #btn-contribuer:hover{ background:#8c5f3f; }
+  #btn-contribuer.actif{ background: var(--vert-foret); }
+  #hint-contribuer{
+    font-size:0.72rem;
+    color:#666;
+    margin: 0 0 18px 0;
+    min-height: 1.2em;
+  }
+
+  .modal-overlay{
+    position: fixed; inset:0;
+    background: rgba(0,0,0,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 2000;
+  }
+  .modal-box{
+    background:#fff;
+    width: 320px;
+    padding: 18px 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .modal-box h3{ margin-top:0; color: var(--vert-foret); font-size:1rem; }
+  .modal-box label{ display:block; font-size:0.78rem; margin: 10px 0 4px; font-weight:600; }
+  .modal-box textarea{
+    width:100%; padding:6px 8px; border:1px solid #ccc; border-radius:6px;
+    font-size:0.82rem; font-family:inherit; resize:vertical; min-height:50px;
+  }
+  .modal-actions{ display:flex; gap:8px; margin-top:16px; }
+  .modal-actions button{
+    flex:1; padding:8px; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;
+  }
+  .btn-valider{ background: var(--vert-foret); color:#fff; }
+  .btn-annuler{ background:#e2e2e2; color:#333; }
+
+  #btn-tracer{
+    width:100%;
+    background: #3a6ea5;
+    color:#fff;
+    border:none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor:pointer;
+    margin-bottom: 6px;
+    transition: background 0.15s;
+  }
+  #btn-tracer:hover{ background:#2c5786; }
+  #btn-tracer.actif{ background: var(--vert-foret); }
+
+  .site-card.contribution{ border-left-color: var(--terre); }
+  .site-card.eau{ border-left-color: #3a8fa5; }
+  .site-card.guide{ border-left-color: #8a5aa5; }
+  .site-card.camping{ border-left-color: #d99a2b; }
+  .site-card.danger{ border-left-color: #c0392b; }
+  .tag-contribution{ background: var(--terre); }
+  .tag-eau{ background: #3a8fa5; }
+  .tag-guide{ background: #8a5aa5; }
+  .tag-camping{ background: #d99a2b; }
+  .tag-danger{ background: #c0392b; }
+
+  /* --- GPS / suivi de position --- */
+  #btn-gps{
+    width:100%;
+    background: #1d6fa5;
+    color:#fff;
+    border:none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor:pointer;
+    margin-bottom: 6px;
+  }
+  #btn-gps:hover{ background:#155586; }
+  #btn-suivi{
+    width:100%;
+    background: #b5432f;
+    color:#fff;
+    border:none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor:pointer;
+    margin-bottom: 6px;
+  }
+  #btn-suivi:hover{ background:#93331f; }
+  #btn-suivi.actif{ background: var(--vert-foret); }
+  #stats-suivi{
+    font-size:0.75rem;
+    color:#444;
+    background: var(--sable);
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 12px;
+    display:none;
+  }
+
+  /* --- Responsive mobile : sidebar en tiroir --- */
+  @media (max-width: 720px){
+    #app{ flex-direction: column; }
+    #sidebar{
+      width: 100%;
+      height: 40vh;
+      order: 2;
+      border-right:none;
+      border-top: 1px solid #ddd;
+    }
+    #map{ height: 60vh; }
+    header h1{ font-size: 1rem; }
+    header h1 span{ font-size: 0.68rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Webmapping des sites de randonnée &amp; circuits écotouristiques
+    <span>Région de Fianarantsoa — Madagascar</span>
+  </h1>
+  <div class="badge">Leaflet · OpenStreetMap · GeoServer (WMS)</div>
+</header>
+
+<div id="app">
+  <aside id="sidebar">
+    <h2>Filtrer la carte</h2>
+
+    <div class="filtre-group">
+      <label><input type="checkbox" id="chk-sites" checked> Sites touristiques</label>
+      <label><input type="checkbox" id="chk-circuits" checked> Circuits / itinéraires</label>
+      <label><input type="checkbox" id="chk-eau" checked> Points d'eau</label>
+      <label><input type="checkbox" id="chk-guides" checked> Guides / contacts locaux</label>
+      <label><input type="checkbox" id="chk-camping" checked> Coins de camping</label>
+      <label><input type="checkbox" id="chk-danger" checked> ⚠️ Zones de danger / vigilance</label>
+    </div>
+
+    <div class="filtre-group">
+      <label for="sel-difficulte">Niveau de difficulté</label>
+      <select id="sel-difficulte">
+        <option value="tous">Tous les niveaux</option>
+        <option value="Facile">Facile</option>
+        <option value="Modérée">Modérée</option>
+        <option value="Difficile">Difficile</option>
+      </select>
+    </div>
+
+    <h2>Ma position (GPS)</h2>
+    <button id="btn-gps">📍 Me localiser</button>
+    <button id="btn-suivi">▶️ Démarrer le suivi du parcours</button>
+    <p id="stats-suivi"></p>
+
+    <h2>Contribuer</h2>
+    <button id="btn-contribuer">📍 Signaler un point (site, eau, guide)</button>
+    <button id="btn-tracer">🥾 Tracer un itinéraire</button>
+    <p id="hint-contribuer"></p>
+
+    <h2>Sites (<span id="count-sites">0</span>)</h2>
+    <div id="liste-sites"></div>
+  </aside>
+
+  <div id="map"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// 1. INITIALISATION DE LA CARTE
+// ---------------------------------------------------------------
+const map = L.map('map', { zoomControl: false }).setView([-21.6, 47.05], 9);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// Fond de carte OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
+
+// ---------------------------------------------------------------
+// 2. COUCHE GEOSERVER (WMS) — connectée à ton GeoServer local
+// ---------------------------------------------------------------
+// L'adresse de GeoServer suit automatiquement celle de la page :
+//  - sur le PC (http://localhost:8000)        -> http://localhost:8080
+//  - sur le téléphone (http://IP-DU-PC:8000)  -> http://IP-DU-PC:8080
+// Plus besoin de modifier l'IP à la main quand elle change.
+const GEOSERVER_HOST = location.hostname || 'localhost';
+const wmsLayer = L.tileLayer.wms('http://' + GEOSERVER_HOST + ':8080/geoserver/fianarantsoa/wms', {
+  layers: 'fianarantsoa:circuits_rando',
+  format: 'image/png',
+  transparent: true,
+  attribution: 'GeoServer'
+});
+wmsLayer.addTo(map);
+
+// ---------------------------------------------------------------
+// 3. DONNÉES (chargées depuis les fichiers GeoJSON du dossier /data)
+//    -> peut être remplacé plus tard par une couche WFS GeoServer
+// ---------------------------------------------------------------
+let sitesLayer, circuitsLayer;
+let sitesData = [];
+
+const iconParDifficulte = (diff) => {
+  const couleur = diff === 'Facile' ? '#4c9a4c' : diff === 'Modérée' ? '#c98b2c' : '#b5432f';
+  return L.divIcon({
+    className: '',
+    html: `<div style="background:${couleur};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.5);"></div>`,
+    iconSize: [16,16],
+    iconAnchor: [8,8]
+  });
+};
+
+function popupSite(p){
+  return `<b>${p.nom}</b>${p.categorie}<br>
+  Difficulté : ${p.difficulte}<br>
+  Durée : ${p.duree}<br>
+  Altitude : ${p.altitude_m} m<br><br>
+  ${p.description}`;
+}
+
+function popupCircuit(p){
+  return `<b>${p.nom}</b>${p.type}<br>
+  Distance : ${p.distance_km} km<br>
+  Durée : ${p.duree}<br>
+  Difficulté : ${p.difficulte}<br><br>
+  ${p.description}`;
+}
+
+function chargerDonnees(){
+  Promise.all([
+    fetch('data/sites_rando.geojson').then(r => r.json()),
+    fetch('data/circuits_rando.geojson').then(r => r.json())
+  ]).then(([sites, circuits]) => {
+    sitesData = sites.features;
+
+    sitesLayer = L.geoJSON(sites, {
+      pointToLayer: (feature, latlng) => L.marker(latlng, { icon: iconParDifficulte(feature.properties.difficulte) }),
+      onEachFeature: (feature, layer) => layer.bindPopup(popupSite(feature.properties))
+    }).addTo(map);
+
+    circuitsLayer = L.geoJSON(circuits, {
+      style: (feature) => ({
+        color: feature.properties.difficulte === 'Facile' ? '#4c9a4c' :
+               feature.properties.difficulte === 'Modérée' ? '#c98b2c' : '#b5432f',
+        weight: 4,
+        dashArray: '6 4'
+      }),
+      onEachFeature: (feature, layer) => layer.bindPopup(popupCircuit(feature.properties))
+    }).addTo(map);
+
+    remplirListeSites(sitesData);
+    appliquerFiltres();
+  }).catch(err => {
+    document.getElementById('liste-sites').innerHTML =
+      '<p style="color:#b5432f;font-size:0.8rem;">Impossible de charger les fichiers GeoJSON. Vérifie que le dossier /data est présent et que la page est servie via un serveur local (voir guide).</p>';
+    console.error(err);
+  });
+}
+
+function remplirListeSites(sites){
+  const liste = document.getElementById('liste-sites');
+  liste.innerHTML = '';
+  document.getElementById('count-sites').textContent = sites.length;
+  sites.forEach(f => {
+    const p = f.properties;
+    const tagClass = p.difficulte === 'Facile' ? 'tag-facile' : p.difficulte === 'Modérée' ? 'tag-moderee' : 'tag-difficile';
+    const div = document.createElement('div');
+    div.className = 'site-card';
+    div.innerHTML = `<b>${p.nom}</b>${p.categorie}<span class="tag ${tagClass}">${p.difficulte}</span>`;
+    div.onclick = () => {
+      map.setView([f.geometry.coordinates[1], f.geometry.coordinates[0]], 12);
+    };
+    liste.appendChild(div);
+  });
+}
+
+// ---------------------------------------------------------------
+// 4. FILTRES
+// ---------------------------------------------------------------
+function appliquerFiltres(){
+  const showSites = document.getElementById('chk-sites').checked;
+  const showCircuits = document.getElementById('chk-circuits').checked;
+  const diff = document.getElementById('sel-difficulte').value;
+
+  if (sitesLayer) map.hasLayer(sitesLayer) && map.removeLayer(sitesLayer);
+  if (circuitsLayer) map.hasLayer(circuitsLayer) && map.removeLayer(circuitsLayer);
+
+  if (showSites && sitesLayer){
+    sitesLayer.eachLayer(l => {
+      if (diff === 'tous' || l.feature.properties.difficulte === diff) l.addTo(map);
+    });
+  }
+  if (showCircuits && circuitsLayer){
+    circuitsLayer.eachLayer(l => {
+      if (diff === 'tous' || l.feature.properties.difficulte === diff) l.addTo(map);
+    });
+  }
+
+  const sitesFiltres = sitesData.filter(f => diff === 'tous' || f.properties.difficulte === diff);
+  remplirListeSites(showSites ? sitesFiltres : []);
+}
+
+document.getElementById('chk-sites').addEventListener('change', appliquerFiltres);
+document.getElementById('chk-circuits').addEventListener('change', appliquerFiltres);
+document.getElementById('sel-difficulte').addEventListener('change', appliquerFiltres);
+
+// ---------------------------------------------------------------
+// 5. LÉGENDE
+// ---------------------------------------------------------------
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function(){
+  const div = L.DomUtil.create('div', 'legend');
+  div.innerHTML = `
+    <b>Légende</b><br>
+    <i style="background:#4c9a4c"></i> Facile<br>
+    <i style="background:#c98b2c"></i> Modérée<br>
+    <i style="background:#b5432f"></i> Difficile<br>
+    <i style="background:var(--terre)"></i> Site signalé<br>
+    <i style="background:#3a8fa5"></i> Point d'eau<br>
+    <i style="background:#8a5aa5"></i> Guide / contact<br>
+    <i style="background:#d99a2b"></i> Camping<br>
+    <i style="background:#c0392b"></i> Zone de danger
+  `;
+  return div;
+};
+legend.addTo(map);
+
+chargerDonnees();
+
+// ---------------------------------------------------------------
+// 6. CONTRIBUTION COMMUNAUTAIRE
+//    Un randonneur peut signaler un site qu'il a découvert.
+//    Stocké en local (localStorage) pour la démo : persiste entre
+//    les rechargements de page sur CE navigateur. En production,
+//    ce serait envoyé au serveur via GeoServer WFS-T (couche
+//    éditable) pour être partagé avec tous les visiteurs.
+// ---------------------------------------------------------------
+const CONTRIB_KEY = 'contributions_rando_fianarantsoa';
+const ITINERAIRES_KEY = 'itineraires_rando_fianarantsoa';
+let modeContribution = false;
+let contribLayer = L.layerGroup().addTo(map);
+let itinerairesContribLayer = L.layerGroup().addTo(map);
+
+function chargerContributions(){
+  try{ return JSON.parse(localStorage.getItem(CONTRIB_KEY)) || []; }catch(e){ return []; }
+}
+function sauvegarderContributions(liste){
+  localStorage.setItem(CONTRIB_KEY, JSON.stringify(liste));
+}
+function chargerItineraires(){
+  try{ return JSON.parse(localStorage.getItem(ITINERAIRES_KEY)) || []; }catch(e){ return []; }
+}
+function sauvegarderItineraires(liste){
+  localStorage.setItem(ITINERAIRES_KEY, JSON.stringify(liste));
+}
+
+// --- icônes selon le type de point signalé ---
+const styleParType = {
+  site:    { couleur: 'var(--terre)', emoji: '🏔️', label: 'Site' },
+  eau:     { couleur: '#3a8fa5',      emoji: '💧', label: "Point d'eau" },
+  guide:   { couleur: '#8a5aa5',      emoji: '🧭', label: 'Guide / contact' },
+  camping: { couleur: '#d99a2b',      emoji: '🏕️', label: 'Coin de camping' },
+  danger:  { couleur: '#c0392b',      emoji: '⚠️', label: 'Zone de danger / vigilance' }
+};
+
+function iconContribution(type){
+  const s = styleParType[type] || styleParType.site;
+  // Zone de danger : icône triangle bien visible, différente des autres
+  if (type === 'danger'){
+    return L.divIcon({
+      className: '',
+      html: `<div style="background:${s.couleur};width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.5);color:white;font-size:13px;font-weight:bold;">!</div>`,
+      iconSize: [22,22],
+      iconAnchor: [11,11]
+    });
+  }
+  return L.divIcon({
+    className: '',
+    html: `<div style="background:${s.couleur};width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.5);"></div>`,
+    iconSize: [18,18],
+    iconAnchor: [9,18]
+  });
+}
+
+function afficherContributions(){
+  contribLayer.clearLayers();
+  const liste = chargerContributions();
+  const showEau = document.getElementById('chk-eau').checked;
+  const showGuides = document.getElementById('chk-guides').checked;
+  const showCamping = document.getElementById('chk-camping').checked;
+  const showDanger = document.getElementById('chk-danger').checked;
+
+  liste.forEach(c => {
+    if (c.type === 'eau' && !showEau) return;
+    if (c.type === 'guide' && !showGuides) return;
+    if (c.type === 'camping' && !showCamping) return;
+    if (c.type === 'danger' && !showDanger) return;
+    if (c.type === 'site' && !document.getElementById('chk-sites').checked) return;
+
+    const s = styleParType[c.type] || styleParType.site;
+    const marker = L.marker([c.lat, c.lng], { icon: iconContribution(c.type) });
+    marker.bindPopup(`<b>${s.emoji} ${c.nom}</b>${s.label} — signalé par un randonneur<br>
+      ${c.difficulte ? 'Difficulté : ' + c.difficulte + '<br>' : ''}
+      ${c.contact ? 'Contact : ' + c.contact + '<br>' : ''}
+      <br>${c.description}`);
+    marker.addTo(contribLayer);
+  });
+  ajouterContributionsALaListe(liste, showEau, showGuides, showCamping, showDanger);
+}
+
+
+function ajouterContributionsALaListe(liste, showEau, showGuides, showCamping, showDanger){
+  const conteneur = document.getElementById('liste-sites');
+  liste.forEach(c => {
+    if (c.type === 'eau' && !showEau) return;
+    if (c.type === 'guide' && !showGuides) return;
+    if (c.type === 'camping' && !showCamping) return;
+    if (c.type === 'danger' && !showDanger) return;
+    const s = styleParType[c.type] || styleParType.site;
+    const classesCss = { eau:'eau', guide:'guide', camping:'camping', danger:'danger' };
+    const tagsCss = { eau:'tag-eau', guide:'tag-guide', camping:'tag-camping', danger:'tag-danger' };
+    const div = document.createElement('div');
+    div.className = `site-card ${classesCss[c.type] || 'contribution'}`;
+    div.innerHTML = `<b>${s.emoji} ${c.nom}</b>${s.label} — signalé par un randonneur<span class="tag ${tagsCss[c.type] || 'tag-contribution'}">${c.difficulte || s.label}</span>`;
+    div.onclick = () => map.setView([c.lat, c.lng], 13);
+    conteneur.appendChild(div);
+  });
+}
+
+function afficherItinerairesContrib(){
+  itinerairesContribLayer.clearLayers();
+  if (!document.getElementById('chk-circuits').checked) return;
+  const liste = chargerItineraires();
+  liste.forEach(it => {
+    const line = L.polyline(it.points, { color: '#3a6ea5', weight: 4, dashArray: '2 6' });
+    line.bindPopup(`<b>🥾 ${it.nom}</b>Itinéraire tracé par un randonneur<br>
+      Difficulté : ${it.difficulte}<br><br>${it.description}`);
+    line.addTo(itinerairesContribLayer);
+  });
+}
+
+// --- Bouton 1 : signaler un point (site / eau / guide) ---
+const btnContribuer = document.getElementById('btn-contribuer');
+const hintContribuer = document.getElementById('hint-contribuer');
+
+btnContribuer.addEventListener('click', () => {
+  desactiverModeTrace();
+  modeContribution = !modeContribution;
+  btnContribuer.classList.toggle('actif', modeContribution);
+  hintContribuer.textContent = modeContribution
+    ? "Clique sur la carte à l'endroit du point à signaler."
+    : '';
+  map.getContainer().style.cursor = modeContribution ? 'crosshair' : '';
+});
+
+map.on('click', (e) => {
+  if (modeContribution){
+    modeContribution = false;
+    btnContribuer.classList.remove('actif');
+    hintContribuer.textContent = '';
+    map.getContainer().style.cursor = '';
+    ouvrirFormulaireContribution(e.latlng);
+  } else if (modeTrace){
+    ajouterPointTrace(e.latlng);
+  }
+});
+
+function ouvrirFormulaireContribution(latlng){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>Signaler un point</h3>
+      <label>Type de point</label>
+      <select id="f-type">
+        <option value="site">Site touristique (cascade, point de vue...)</option>
+        <option value="eau">Point d'eau (source, rivière...)</option>
+        <option value="guide">Guide / contact local</option>
+        <option value="camping">Coin de camping</option>
+        <option value="danger">⚠️ Zone de danger / vigilance</option>
+      </select>
+      <label>Nom</label>
+      <input type="text" id="f-nom" placeholder="Ex : Source de..., ou nature du danger">
+      <div id="bloc-difficulte">
+        <label>Difficulté</label>
+        <select id="f-difficulte">
+          <option>Facile</option>
+          <option>Modérée</option>
+          <option>Difficile</option>
+        </select>
+      </div>
+      <div id="bloc-contact" style="display:none;">
+        <label>Contact (téléphone / réseau social)</label>
+        <input type="text" id="f-contact" placeholder="Ex : +261 34 ...">
+      </div>
+      <label>Description</label>
+      <textarea id="f-description" placeholder="Détails utiles pour les autres randonneurs (pour une zone de danger : précise bien la nature du risque)..."></textarea>
+      <div class="modal-actions">
+        <button class="btn-annuler">Annuler</button>
+        <button class="btn-valider">Ajouter à la carte</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const selType = overlay.querySelector('#f-type');
+  selType.addEventListener('change', () => {
+    const isGuide = selType.value === 'guide';
+    overlay.querySelector('#bloc-difficulte').style.display = isGuide ? 'none' : 'block';
+    overlay.querySelector('#bloc-contact').style.display = isGuide ? 'block' : 'none';
+  });
+
+  overlay.querySelector('.btn-annuler').onclick = () => overlay.remove();
+  overlay.querySelector('.btn-valider').onclick = () => {
+    const type = selType.value;
+    const nom = overlay.querySelector('#f-nom').value.trim() || 'Sans nom';
+    const difficulte = overlay.querySelector('#f-difficulte').value;
+    const contact = overlay.querySelector('#f-contact').value.trim();
+    const description = overlay.querySelector('#f-description').value.trim() || 'Aucune description fournie.';
+
+    const liste = chargerContributions();
+    liste.push({ type, nom, difficulte, contact, description, lat: latlng.lat, lng: latlng.lng });
+    sauvegarderContributions(liste);
+
+    overlay.remove();
+    afficherContributions();
+  };
+}
+
+// --- Bouton 2 : tracer un itinéraire (plusieurs clics = une ligne) ---
+const btnTracer = document.getElementById('btn-tracer');
+let modeTrace = false;
+let pointsTrace = [];
+let ligneTemporaire = null;
+
+btnTracer.addEventListener('click', () => {
+  if (modeTrace){
+    if (pointsTrace.length >= 2){
+      terminerTrace();
+    } else {
+      annulerTrace();
+    }
+    return;
+  }
+  desactiverModeContribution();
+  modeTrace = true;
+  pointsTrace = [];
+  btnTracer.textContent = '✅ Terminer le tracé (min. 2 points)';
+  btnTracer.classList.add('actif');
+  hintContribuer.textContent = "Clique sur la carte pour poser chaque point du parcours, puis clique sur le bouton pour terminer.";
+  map.getContainer().style.cursor = 'crosshair';
+});
+
+function ajouterPointTrace(latlng){
+  pointsTrace.push([latlng.lat, latlng.lng]);
+  if (ligneTemporaire) map.removeLayer(ligneTemporaire);
+  ligneTemporaire = L.polyline(pointsTrace, { color: '#3a6ea5', weight: 4 }).addTo(map);
+}
+
+function annulerTrace(){
+  modeTrace = false;
+  pointsTrace = [];
+  if (ligneTemporaire) map.removeLayer(ligneTemporaire);
+  ligneTemporaire = null;
+  btnTracer.textContent = '🥾 Tracer un itinéraire';
+  btnTracer.classList.remove('actif');
+  hintContribuer.textContent = '';
+  map.getContainer().style.cursor = '';
+}
+
+function desactiverModeTrace(){ if (modeTrace) annulerTrace(); }
+function desactiverModeContribution(){
+  modeContribution = false;
+  btnContribuer.classList.remove('actif');
+  hintContribuer.textContent = '';
+}
+
+function terminerTrace(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>Nommer cet itinéraire</h3>
+      <label>Nom de l'itinéraire</label>
+      <input type="text" id="f-nom-it" placeholder="Ex : Sentier de...">
+      <label>Difficulté</label>
+      <select id="f-diff-it">
+        <option>Facile</option>
+        <option>Modérée</option>
+        <option>Difficile</option>
+      </select>
+      <label>Description</label>
+      <textarea id="f-desc-it" placeholder="Point de départ, durée estimée, particularités..."></textarea>
+      <div class="modal-actions">
+        <button class="btn-annuler">Annuler</button>
+        <button class="btn-valider">Enregistrer l'itinéraire</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.btn-annuler').onclick = () => { overlay.remove(); annulerTrace(); };
+  overlay.querySelector('.btn-valider').onclick = () => {
+    const nom = overlay.querySelector('#f-nom-it').value.trim() || 'Itinéraire sans nom';
+    const difficulte = overlay.querySelector('#f-diff-it').value;
+    const description = overlay.querySelector('#f-desc-it').value.trim() || 'Aucune description fournie.';
+
+    const liste = chargerItineraires();
+    liste.push({ nom, difficulte, description, points: pointsTrace });
+    sauvegarderItineraires(liste);
+
+    overlay.remove();
+    annulerTrace();
+    afficherItinerairesContrib();
+  };
+}
+
+// --- Filtres : recalcule aussi les couches de contribution ---
+const filtresOriginal = appliquerFiltres;
+appliquerFiltres = function(){
+  filtresOriginal();
+  afficherContributions();
+  afficherItinerairesContrib();
+};
+['chk-sites','chk-circuits','chk-eau','chk-guides','chk-camping','chk-danger','sel-difficulte'].forEach(id => {
+  document.getElementById(id).addEventListener('change', appliquerFiltres);
+});
+
+afficherContributions();
+afficherItinerairesContrib();
+
+// ---------------------------------------------------------------
+// 8. GÉOLOCALISATION & SUIVI DE PARCOURS
+//    Pense à un usage mobile : le randonneur voit sa position en
+//    direct et peut enregistrer son trajet pendant la marche.
+// ---------------------------------------------------------------
+let markerMaPosition = null;
+let watchId = null;
+let suiviActif = false;
+let pointsSuivi = [];
+let ligneSuivi = null;
+
+const iconMaPosition = L.divIcon({
+  className: '',
+  html: `<div style="background:#1d6fa5;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(29,111,165,0.3);"></div>`,
+  iconSize: [16,16],
+  iconAnchor: [8,8]
+});
+
+document.getElementById('btn-gps').addEventListener('click', () => {
+  if (!navigator.geolocation){
+    alert("La géolocalisation n'est pas disponible sur cet appareil/navigateur.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const latlng = [pos.coords.latitude, pos.coords.longitude];
+      if (markerMaPosition) map.removeLayer(markerMaPosition);
+      markerMaPosition = L.marker(latlng, { icon: iconMaPosition }).addTo(map);
+      markerMaPosition.bindPopup('Ma position actuelle').openPopup();
+      map.setView(latlng, 14);
+    },
+    (err) => alert("Impossible de récupérer la position : " + err.message),
+    { enableHighAccuracy: true }
+  );
+});
+
+const btnSuivi = document.getElementById('btn-suivi');
+const statsSuivi = document.getElementById('stats-suivi');
+
+btnSuivi.addEventListener('click', () => {
+  if (!suiviActif){
+    demarrerSuivi();
+  } else {
+    arreterSuivi();
+  }
+});
+
+function demarrerSuivi(){
+  if (!navigator.geolocation){
+    alert("La géolocalisation n'est pas disponible sur cet appareil/navigateur.");
+    return;
+  }
+  suiviActif = true;
+  pointsSuivi = [];
+  btnSuivi.textContent = '⏹️ Arrêter et enregistrer le parcours';
+  btnSuivi.classList.add('actif');
+  statsSuivi.style.display = 'block';
+  statsSuivi.textContent = 'Suivi en cours... 0,00 km';
+
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const point = [pos.coords.latitude, pos.coords.longitude];
+      pointsSuivi.push(point);
+
+      if (ligneSuivi) map.removeLayer(ligneSuivi);
+      ligneSuivi = L.polyline(pointsSuivi, { color: '#b5432f', weight: 5 }).addTo(map);
+
+      if (markerMaPosition) map.removeLayer(markerMaPosition);
+      markerMaPosition = L.marker(point, { icon: iconMaPosition }).addTo(map);
+
+      statsSuivi.textContent = `Suivi en cours... ${calculerDistanceKm(pointsSuivi).toFixed(2)} km parcourus`;
+    },
+    (err) => console.error('Erreur GPS :', err.message),
+    { enableHighAccuracy: true, maximumAge: 5000 }
+  );
+}
+
+function arreterSuivi(){
+  suiviActif = false;
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  btnSuivi.textContent = '▶️ Démarrer le suivi du parcours';
+  btnSuivi.classList.remove('actif');
+  statsSuivi.style.display = 'none';
+
+  if (pointsSuivi.length < 2){
+    alert('Parcours trop court pour être enregistré.');
+    if (ligneSuivi) map.removeLayer(ligneSuivi);
+    return;
+  }
+
+  const distance = calculerDistanceKm(pointsSuivi).toFixed(2);
+  const nom = prompt(`Parcours de ${distance} km enregistré. Donne-lui un nom pour le sauvegarder comme itinéraire (laisse vide pour ne pas l'enregistrer) :`);
+  if (nom && nom.trim()){
+    const liste = chargerItineraires();
+    liste.push({
+      nom: nom.trim(),
+      difficulte: 'Modérée',
+      description: `Parcours GPS enregistré en direct — ${distance} km.`,
+      points: pointsSuivi
+    });
+    sauvegarderItineraires(liste);
+    afficherItinerairesContrib();
+  }
+}
+
+// Distance approximative (formule haversine, en km)
+function calculerDistanceKm(points){
+  let total = 0;
+  for (let i = 1; i < points.length; i++){
+    total += distanceEntrePoints(points[i-1], points[i]);
+  }
+  return total;
+}
+function distanceEntrePoints(p1, p2){
+  const R = 6371;
+  const dLat = (p2[0]-p1[0]) * Math.PI/180;
+  const dLon = (p2[1]-p1[1]) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(p1[0]*Math.PI/180)*Math.cos(p2[0]*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ---------------------------------------------------------------
+// 9. PWA : enregistrement du service worker (mode hors-ligne)
+// ---------------------------------------------------------------
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(err => {
+      console.log('Service worker non enregistré (normal si testé sans serveur https/local) :', err);
+    });
+  });
+}
+</script>
+</body>
+</html>

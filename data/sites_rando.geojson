@@ -1,0 +1,90 @@
+{
+  "type": "FeatureCollection",
+  "name": "sites_rando_fianarantsoa",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "nom": "Parc National Ranomafana",
+        "categorie": "Parc National",
+        "difficulte": "Modérée",
+        "duree": "2 à 6 heures selon circuit",
+        "description": "Forêt tropicale humide, lémuriens (dont le grand hapalémur), cascades. L'un des parcs les plus visités de Madagascar.",
+        "altitude_m": 1000,
+        "image": ""
+      },
+      "geometry": { "type": "Point", "coordinates": [47.4321, -21.2555] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "nom": "Réserve Communautaire d'Anja",
+        "categorie": "Réserve communautaire",
+        "difficulte": "Facile",
+        "duree": "1 à 2 heures",
+        "description": "Célèbre pour ses colonies de makis catta (lémurs à queue annelée), massifs granitiques et grottes.",
+        "altitude_m": 950,
+        "image": ""
+      },
+      "geometry": { "type": "Point", "coordinates": [46.9432, -21.8672] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3,
+        "nom": "Massif du Tsaranoro",
+        "categorie": "Randonnée / Escalade",
+        "difficulte": "Difficile",
+        "duree": "1 à 3 jours",
+        "description": "Parois granitiques spectaculaires, spot international d'escalade, treks de plusieurs jours, villages betsileo.",
+        "altitude_m": 1600,
+        "image": ""
+      },
+      "geometry": { "type": "Point", "coordinates": [46.8833, -22.1667] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 4,
+        "nom": "Parc National Andringitra",
+        "categorie": "Parc National",
+        "difficulte": "Difficile",
+        "duree": "2 à 4 jours",
+        "description": "Deuxième plus haut sommet de Madagascar (Pic Boby / Imarivolanitra), paysages de montagne, forte biodiversité.",
+        "altitude_m": 2658,
+        "image": ""
+      },
+      "geometry": { "type": "Point", "coordinates": [46.9167, -22.2 ] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 5,
+        "nom": "Chutes de la Lily",
+        "categorie": "Cascade",
+        "difficulte": "Facile",
+        "duree": "Demi-journée",
+        "description": "Cascade et bassins naturels proches de Fianarantsoa, prisés pour la baignade et le pique-nique.",
+        "altitude_m": 900,
+        "image": ""
+      },
+      "geometry": { "type": "Point", "coordinates": [47.15, -21.35] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 6,
+        "nom": "Ville haute de Fianarantsoa (point de départ)",
+        "categorie": "Point de départ / Ville",
+        "difficulte": "Facile",
+        "duree": "1 à 2 heures (visite)",
+        "description": "Vieille ville coloniale, ruelles pavées, cathédrale, point de départ logistique de la plupart des circuits de la région.",
+        "altitude_m": 1200,
+        "image": ""
+      },
+      "geometry": { "type": "Point", "coordinates": [47.0857, -21.4529] }
+    }
+  ]
+}
